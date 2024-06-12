@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>preview-missav</title>
+    <style>
+      .content {
+        margin-top: 24px;
+        margin-bottom: 96px;
+        padding: 12px;
+        border: 4px solid rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+
+        .card-wrap {
+          width: calc(50% - 16px);
+        }
+
+        .card-wrap:not(:nth-child(-n + 2)) {
+          margin-top: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div>hello miss</div>
+    <div class="content"></div>
+    <template id="my-card-template">
+      <style>
+        .card-item {
+          width: 100%;
+          min-height: 200px;
+          color: black;
+          font-size: 18px;
+          background: rgba(0, 0, 0, 0.1);
+
+          .title {
+            color: rgba(0, 0, 0, 0.4);
+            font-size: 16px;
+            line-height: 1.5;
+          }
+
+          .name {
+            font-size: 20px;
+            line-height: 1.5;
+          }
+
+          .img-wrap {
+            padding-top: 24px;
+            display: flex;
+            align-items: center;
+
+            img {
+              object-fit: contain;
+            }
+
+            img,
+            video {
+              height: 225px;
+              display: block;
+              flex: 1;
+            }
+          }
+        }
+      </style>
+      <div class="card-item">
+        <div class="title"><slot name="title"></slot></div>
+        <a class="link name"><slot name="name"></slot></a>
+        <div class="img-wrap">
+          <img class="img" />
+          <video class="gif" controls></video>
+        </div>
+      </div>
+    </template>
+
+    <script defer>
+      customElements.define(
+        'my-card',
+        class extends HTMLElement {
+          constructor() {
+            super();
+          }
+
+          connectedCallback() {
+            let template = document.getElementById('my-card-template');
+            let templateContent = template.content;
+
+            const shadowRoot = this.attachShadow({ mode: 'closed' });
+            shadowRoot.appendChild(templateContent.cloneNode(true));
+            shadowRoot
+              .querySelector('.link')
+              .setAttribute('href', this.getAttribute('data-link'));
+            shadowRoot.querySelector('.link').setAttribute('target', '_blank');
+            shadowRoot
+              .querySelector('.img-wrap .img')
+              .setAttribute('src', this.getAttribute('data-src'));
+            shadowRoot
+              .querySelector('.img-wrap .gif')
+              .setAttribute('src', this.getAttribute('data-video'));
+          }
+        }
+      );
+    </script>
+    <script>
+      const fetchData = async () => {
+        const result = await fetch(
+          'http://127.0.0.1:7001/getMissAvData?path=missav_fc2_most_views'
+        ).then(res => res.json());
+        return result;
+      };
+      const addElement = data => {
+        const content = document.querySelector('.content');
+        const fragment = document.createDocumentFragment();
+        const cardDemoOrigin = document.querySelector('.card-demo');
+        if (!Array.isArray(data)) return;
+
+        data.forEach((item, index) => {
+          const card = document.createElement('my-card');
+          card.classList.add('card-wrap');
+          card.innerHTML = `
+          <div slot="title">index: ${index + 1};</div>
+          <div slot="name">${item.name}</div>
+          `;
+          card.setAttribute('data-src', item.src);
+          card.setAttribute('data-video', item.video);
+          card.setAttribute('data-link', item.link);
+          fragment.appendChild(card);
+          // const cardDemo = cardDemoOrigin.cloneNode(true);
+          // cardDemo.classList.remove('card-demo');
+          // cardDemo.querySelector('.title').innerText = `index: ${
+          //   index + 1
+          // }; id: ${item.id}`;
+          // cardDemo.querySelector('.name').innerText = item.name;
+          // cardDemo.querySelector('.link').setAttribute('href', item.link);
+          // cardDemo.querySelector('.link').setAttribute('target', '_blank');
+          // cardDemo.querySelector('.link').innerText = '链接跳转';
+          // cardDemo.querySelector('.img').setAttribute('src', item.img);
+          // cardDemo.querySelector('.gif').setAttribute('src', item.gif);
+          // fragment.appendChild(cardDemo);
+        });
+
+        content.appendChild(fragment);
+      };
+
+      const main = async () => {
+        const data = await fetchData();
+        addElement(data);
+      };
+
+      main();
+    </script>
+  </body>
+</html>
